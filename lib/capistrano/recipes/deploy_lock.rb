@@ -120,10 +120,9 @@ Capistrano::Configuration.instance(:must_exist).load do
       # Don't check the lock if we just created it
       next if self[:deploy_lock]
 
-      fetch_deploy_lock
+    fetch_deploy_lock
       # Return if no lock
       next unless self[:deploy_lock]
-
 
       if deploy_lock[:expire_at] && deploy_lock[:expire_at] < Time.now
         logger.info Capistrano::DeployLock.expired_message(application, stage, deploy_lock)

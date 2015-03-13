@@ -36,9 +36,8 @@ module Capistrano
         else
           message << "\nLock expires at #{deploy_lock[:expire_at].localtime.strftime("%H:%M:%S")}"
         end
-      else
-        message << "\nLock must be manually removed with: cap #{stage} deploy:unlock"
       end
+      message << "\nLock can be manually removed with: cap #{stage} deploy:unlock:force"
     end
 
     def self.expired_message(application, stage, deploy_lock)
