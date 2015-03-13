@@ -20,28 +20,20 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       if self[:deploy_lock].nil?
         # Check all matching servers for a deploy lock.
-        parallel do |session|
-          find_servers_for_task(current_task).each do |current_server|
-            session.else "[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true" do |ch, stream, output|
-              if output && output != ""
-                logger.info "Deploy lock found on: #{current_server.host}"
-                set :deploy_lock, YAML.load(output)
-                return
-              end
-            end
-          end
-        end
+        output = capture("[ -e #{deploy_lockfile} ] && cat #{deploy_lockfile} || true")
 
-        set :deploy_lock, false
+        lock = YAML.load(output) rescue nil
+        lock_value = lock ? lock : false
+        set(:deploy_lock, lock_value)
       end
     end
 
     def write_deploy_lock(deploy_lock)
-      put deploy_lock.to_yaml, deploy_lockfile, :mode => 0777
+      put deploy_lock.to_yaml, deploy_lockfile, mode: 0777, once: true
     end
 
     def remove_deploy_lock
-      run "rm -f #{deploy_lockfile}"
+      run "rm -f #{deploy_lockfile}", once: true
       self[:deploy_lock] = nil
       self[:deploy_lock_removed] = true
     end
@@ -131,6 +123,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       fetch_deploy_lock
       # Return if no lock
       next unless self[:deploy_lock]
+
 
       if deploy_lock[:expire_at] && deploy_lock[:expire_at] < Time.now
         logger.info Capistrano::DeployLock.expired_message(application, stage, deploy_lock)
